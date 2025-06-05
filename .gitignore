@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.so
+
+# IDE / Editor specific files (optional, but good practice)
+.vscode/
+.idea/
+*.swp
+*~
+
+# Build artifacts (if any in the future)
+build/
+dist/
+*.egg-info/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Game specific ignores
+game_reports/
+players_config - 副本.json
+
+# Virtual environment (if you use one and it's in the project dir)
+# venv/
+# .venv/
+# env/
+# .env/
+
+# Log files (if you generate other log files not in game_reports)
+# *.log

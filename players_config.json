@@ -1,0 +1,9 @@
+[
+  {
+  "name": "PlayerAI1",
+  "api_endpoint": "http://localhost:11434/v1/chat/completions",
+  "api_key": "EMPTY",
+  "model": "qwen:7b-chat",
+  "response_handler_type": "standard"
+  }
+]
