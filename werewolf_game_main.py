@@ -2,6 +2,8 @@
 import os
 import sys
 import traceback
+# 在现有导入后添加这些
+from ui_adapter import create_ui_adapter, set_current_ui_adapter
 
 # 假设 terminal_colors.py 在项目根目录或者Python可以找到的路径下
 try:
@@ -53,19 +55,19 @@ def run_gm_command_interface(game_state: GameState, during_game: bool = False):
         choice = input(cyan("请输入GM操作编号: ")).strip()
 
         if choice == '1':
-            display_all_player_statuses(game_state) # gm_tools 内部会处理自己的颜色
+            display_all_player_statuses(game_state, ui_adapter=None)
         elif choice == '2':
             p_name_input = input(cyan("请输入要查看历史的玩家配置名 (例如 PlayerAI1): ")).strip()
             if p_name_input in game_state.ai_player_config_names:
-                view_player_game_history(game_state, p_name_input)
+                view_player_game_history(game_state, p_name_input, ui_adapter=None)
             else:
                 print(red(f"错误: 玩家配置名 '{colorize(p_name_input, Colors.YELLOW)}' 不存在。可用: {colorize(str(game_state.ai_player_config_names), Colors.CYAN)}"))
         elif choice == '3':
             count_str = input(cyan("要显示多少条日志 (默认20)? ")).strip()
             count = int(count_str) if count_str.isdigit() and int(count_str) > 0 else 20
-            display_game_log(game_state, count)
+            display_game_log(game_state, count, ui_adapter=None)
         elif choice == '4' and (during_game or game_state.current_game_phase not in [PHASE_GAME_SETUP, PHASE_START_GAME]):
-            display_current_votes(game_state)
+            display_current_votes(game_state, ui_adapter=None)
         elif choice == '5':
             print(colorize("警告：手动修改玩家状态可能导致游戏逻辑混乱，请仅在特殊调试情况下使用。", Colors.BOLD + Colors.RED))
             p_name_manual = input(cyan("请输入要修改状态的玩家配置名: ")).strip()
@@ -94,7 +96,28 @@ def run_gm_command_interface(game_state: GameState, during_game: bool = False):
         input(grey("按回车键继续GM操作或返回..."))
 
 
-def main():
+def main(ui_mode="terminal"):
+    if ui_mode == "gradio":
+        print("启动Web界面模式...")
+        try:
+            from gradio_game_controller import create_gradio_controller
+            controller = create_gradio_controller()
+            app = controller.create_interface()
+            print(green("Web界面已准备就绪！"))
+            app.launch(
+                server_name="0.0.0.0",
+                server_port=7860,
+                share=False,
+                inbrowser=True
+            )
+            return
+        except ImportError as e:
+            print(red(f"错误: 无法导入Gradio相关模块: {e}"))
+            print(yellow("请确保已安装gradio: pip install gradio"))
+            return
+        except Exception as e:
+            print(red(f"启动Web界面时发生错误: {e}"))
+            return
     print(bold(magenta("欢迎来到AI狼人杀游戏！")))
     print(magenta("=" * 30))
 
@@ -125,13 +148,16 @@ def main():
         return
 
     num_players_colored = bold(str(len(game_state.ai_player_config_names)))
+    ui_adapter = create_ui_adapter("terminal")
+    ui_adapter.set_game_state(game_state)
+    set_current_ui_adapter(ui_adapter)
     print(green(f"\n游戏设置完毕！共有 {num_players_colored} 名玩家参与。"))
     print(cyan("GM可以随时通过特定指令（如果实现）或在阶段间隙介入。"))
-    display_all_player_statuses(game_state)
+    display_all_player_statuses(game_state, ui_adapter=None)
     input(bold(cyan("\n按回车键开始第一夜...")))
 
     try:
-        run_game_loop(game_state)
+        run_game_loop(game_state, ui_adapter=ui_adapter)
     except KeyboardInterrupt:
         print(yellow("\nGM通过Ctrl+C中断了游戏。"))
         game_state.add_game_event_log("GameInterrupt", "游戏被GM通过键盘中断。", {"day": game_state.game_day, "phase": game_state.current_game_phase})
@@ -168,4 +194,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    
+    # 检查命令行参数
+    if len(sys.argv) > 1 and sys.argv[1] == "--web":
+        main("gradio")
+    else:
+        main("terminal")

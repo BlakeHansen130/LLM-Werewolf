@@ -1,0 +1,14 @@
+# requirements.txt (Complete and Corrected)
+
+# For the Web Interface and its backend server
+gradio==4.31.5
+fastapi==0.104.1
+pydantic==2.5.3
+starlette==0.27.0
+uvicorn[standard]==0.24.0
+
+# For making HTTP API calls to the AI model
+requests
+
+# The official library for interacting with OpenAI and compatible APIs
+openai

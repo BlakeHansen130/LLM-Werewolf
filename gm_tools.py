@@ -1,5 +1,6 @@
 # gm_tools.py (修改版 - 颜色日志)
 from typing import Optional, List
+from ui_adapter import get_current_ui_adapter, is_gradio_mode
 
 # 假设 terminal_colors.py 在项目根目录或者Python可以找到的路径下
 try:
@@ -44,7 +45,13 @@ def _get_colored_player_display_name_from_gm(game_state: GameState, player_confi
     return player_name_color(base_display_name, player_data, game_state)
 
 
-def display_all_player_statuses(game_state: GameState):
+def display_all_player_statuses(game_state: GameState, ui_adapter=None):
+    if ui_adapter is None:
+        ui_adapter = get_current_ui_adapter()
+    
+    if ui_adapter and is_gradio_mode():
+        ui_adapter.show_player_status(game_state.players_data, True)
+        return
     _log_gm_tool(bold(underline("--- 所有玩家状态 (GM视角) ---")), game_state_ref=game_state)
     if not game_state.players_data:
         _log_gm_tool(yellow("没有玩家数据可显示。"), "WARN", game_state_ref=game_state)
@@ -73,7 +80,22 @@ def display_all_player_statuses(game_state: GameState):
         
         _log_gm_tool(f"玩家 {player_num}: {player_name_colored} - 身份: {role_colored}, 状态: {status_colored}{detail_str_colored}", game_state_ref=game_state)
 
-def view_player_game_history(game_state: GameState, player_config_name: str):
+def view_player_game_history(game_state: GameState, player_config_name: str, ui_adapter=None):
+    if ui_adapter is None:
+        ui_adapter = get_current_ui_adapter()
+    
+    player_info = game_state.get_player_info(player_config_name)
+    if not player_info:
+        error_msg = f"未找到玩家 {player_config_name} 的信息。"
+        if ui_adapter and is_gradio_mode():
+            ui_adapter.broadcast_message(error_msg, "gm_action")
+        else:
+            _log_gm_tool(red(error_msg), "ERROR", game_state_ref=game_state)
+        return
+    
+    if ui_adapter and is_gradio_mode():
+        ui_adapter.show_player_history(player_config_name, player_info)
+        return
     player_info = game_state.get_player_info(player_config_name)
     player_display_colored = _get_colored_player_display_name_from_gm(game_state, player_config_name, True)
 
@@ -105,7 +127,13 @@ def view_player_game_history(game_state: GameState, player_config_name: str):
         
         _log_gm_tool(f"  [{bold(str(i+1))}] {msg_role_colored}{meta_str_colored}: {content_preview}", game_state_ref=game_state)
 
-def display_game_log(game_state: GameState, count: int = 20):
+def display_game_log(game_state: GameState, count: int = 20, ui_adapter=None):
+    if ui_adapter is None:
+        ui_adapter = get_current_ui_adapter()
+    
+    if ui_adapter and is_gradio_mode():
+        ui_adapter.show_game_log(game_state.game_log, count)
+        return
     _log_gm_tool(bold(underline(f"--- 最新 {bold(str(count))} 条游戏事件日志 ---")), game_state_ref=game_state)
     if not game_state.game_log:
         _log_gm_tool(yellow("游戏日志为空。"), "INFO", game_state_ref=game_state)
@@ -149,7 +177,13 @@ def gm_manual_set_player_status(game_state: GameState, player_config_name: str, 
     else: # Should ideally not happen if above checks pass, but as a fallback
         _log_gm_tool(red(f"GM尝试修改玩家 {player_display_colored} 状态失败。"), "ERROR", game_state_ref=game_state)
 
-def display_current_votes(game_state: GameState):
+def display_current_votes(game_state: GameState, ui_adapter=None):
+    if ui_adapter is None:
+        ui_adapter = get_current_ui_adapter()
+    
+    if ui_adapter and is_gradio_mode():
+        ui_adapter.show_current_votes(game_state.votes_current_round)
+        return
     _log_gm_tool(bold(underline("--- 当前轮次投票情况 ---")), game_state_ref=game_state)
     if not game_state.votes_current_round:
         _log_gm_tool(yellow("尚未开始投票或没有投票数据。"), "INFO", game_state_ref=game_state)

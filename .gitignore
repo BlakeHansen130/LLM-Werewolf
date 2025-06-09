@@ -22,7 +22,6 @@ Thumbs.db
 
 # Game specific ignores
 game_reports/
-players_config - 副本.json
 
 # Virtual environment (if you use one and it's in the project dir)
 # venv/
